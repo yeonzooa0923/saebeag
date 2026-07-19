@@ -151,7 +151,7 @@
                 </div>
                 
                 <div class="px-6 sm:px-8 pb-6 flex flex-col sm:flex-row relative">
-                    <!-- Avatar Area (AfreecaTV / SOOP profile image path) -->
+                    <!-- Avatar Area -->
                     <div class="-mt-16 sm:-mt-24 mb-4 sm:mb-0 sm:mr-6 flex-shrink-0 flex justify-center sm:block relative z-10">
                         <img class="h-32 w-32 sm:h-40 sm:w-40 rounded-full border-4 border-white dark:border-[#131124] shadow-md object-cover bg-indigo-50 dark:bg-indigo-950/30 hover:scale-105 transition-transform duration-350" 
                              src="https://stimg.afreecatv.com/LOGO/se/seharug/seharug.jpg" 
@@ -181,19 +181,16 @@
                             </div>
                         </div>
 
-                        <!-- Social Integration Links (Bottom) -->
+                        <!-- Social Integration Links -->
                         <div class="flex justify-center sm:justify-start gap-4">
-                            <!-- SOOP Link -->
                             <a id="profile-soop-link" href="https://www.sooplive.com/station/seharug" target="_blank" 
                                class="w-11 h-11 rounded-full bg-[#1aa7ec] text-white flex items-center justify-center hover:scale-110 transition-transform shadow-sm" title="SOOP 방송국">
                                 <i class="fa-solid fa-tv text-base"></i>
                             </a>
-                            <!-- YouTube Link -->
                             <a id="profile-youtube-link" href="https://youtube.com/@saebeag__0?si=sppmAgvD0WHYCUXa" target="_blank" 
                                class="w-11 h-11 rounded-full bg-[#ff0000] text-white flex items-center justify-center hover:scale-110 transition-transform shadow-sm" title="YouTube">
                                 <i class="fa-brands fa-youtube text-lg"></i>
                             </a>
-                            <!-- Cafe Link (Naver Fan Cafe) -->
                             <a id="profile-cafe-link" href="https://cafe.naver.com/iris2514" target="_blank" 
                                class="w-11 h-11 rounded-full bg-[#03c75a] text-white flex items-center justify-center hover:scale-110 transition-transform shadow-sm" title="네이버 팬카페">
                                 <i class="fa-solid fa-mug-hot text-base"></i>
@@ -406,7 +403,7 @@
                     </div>
                 </div>
 
-                <!-- Song List Container -->
+                <!-- Song List Table -->
                 <div class="overflow-hidden border border-indigo-50 dark:border-indigo-950/40 rounded-2xl">
                     <table class="min-w-full divide-y divide-indigo-50 dark:divide-indigo-950/40 text-left text-sm font-medium">
                         <thead class="bg-indigo-50/40 dark:bg-indigo-950/10 text-xs text-[#4e486b] dark:text-indigo-300 font-bold uppercase tracking-wider">
@@ -644,7 +641,7 @@
 
     </main>
 
-    <!-- Footer Section with Links -->
+    <!-- Footer Section -->
     <footer class="bg-indigo-950 dark:bg-black text-white py-8 text-center mt-auto transition-colors duration-300 border-t border-indigo-100/10">
         <p class="text-sm text-indigo-100 dark:text-indigo-300 font-cute text-2xl tracking-wide">⭐ 새벽에 언제나 함께 ⭐</p>
         
@@ -657,11 +654,17 @@
         <span id="toast-text">복사 성공!</span>
     </div>
 
-    <!-- Core JS System: Data synchronization and interactive effects -->
+    <!-- Core JS System -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        /* 
+          CRITICAL FIX: getFirestore 대신 initializeFirestore를 불러옵니다.
+          일부 보안 아이프레임(iframe) 환경이나 웹소켓 차단 환경에서 발생하는 "client is offline" 
+          오류를 우회하기 위해 HTTP 롱폴링(Long-polling) 옵션을 활성화합니다.
+        */
+        import { initializeFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase Configuration (새백님 전용 파이어베이스 프로젝트 데이터베이스 연동)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'saebeag-profile-app';
@@ -675,7 +678,15 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        
+        /* 
+          HTTP 롱폴링(Long-polling)을 사용하도록 구성된 안전한 Firestore 초기화 코드입니다.
+          이 옵션은 프록시, VPN, 브라우저 미리보기 샌드박스로 인해 차단된 웹소켓(WebSocket)을 우회합니다.
+        */
+        const db = initializeFirestore(app, {
+            experimentalForceLongPolling: true
+        });
+        
         const auth = getAuth(app);
 
         // Default Configured Data structured beautifully for Saebeag
@@ -758,7 +769,7 @@
             } catch (e) {}
         }
 
-        // Firebase 데이터 저장 문서 참조 경로 (규칙 1에 따른 완벽한 6세그먼트 문서 경로 지정)
+        // Firebase 데이터 저장 문서 참조 경로
         const getSaebeagDocRef = () => doc(db, 'artifacts', appId, 'public', 'data', 'profile-content', 'main');
 
         async function authenticate() {
@@ -768,7 +779,7 @@
                 } else {
                     await signInAnonymously(auth);
                 }
-                console.log("Firebase Saebeag Authenticated successfully");
+                console.log("Firebase Saebeag Authenticated successfully with forced long-polling");
                 return true;
             } catch (error) {
                 console.warn("Auth failed, caching fallback:", error.message);
@@ -1116,7 +1127,6 @@
             if (!list) return;
             list.innerHTML = '';
             
-            // 휴방 외의 요일은 무채색(gray) 톤으로 차분하게 매핑하고, 휴방 요일만 밤하늘의 노란 별빛(amber) 포인트를 적용합니다.
             const colorMap = {
                 gray: { text: 'text-gray-700 dark:text-indigo-200', dayText: 'text-gray-500 dark:text-indigo-300 bg-indigo-50/50 dark:bg-indigo-950/20' },
                 amber: { text: 'text-amber-600 dark:text-amber-400 font-bold', dayText: 'text-[#1e1b4b] bg-amber-300 dark:bg-amber-400 font-black' }
@@ -1233,7 +1243,6 @@
             }
 
             filteredSongs.forEach((song, originalIndex) => {
-                // Find actual index in globalSongsData to allow deletion
                 const actualIndex = globalSongsData.findIndex(s => s.title === song.title && s.artist === song.artist);
                 
                 const deleteBtn = isAdminMode ? `
@@ -1264,7 +1273,6 @@
         function requestSong(title, artist) {
             const textToCopy = `!신청 ${title} - ${artist}`;
             
-            // Execute fallback copy logic matching Canvas guidelines
             const dummy = document.createElement("textarea");
             document.body.appendChild(dummy);
             dummy.value = textToCopy;
@@ -1275,11 +1283,11 @@
             showToast(`"${title}" 신청 커맨드가 복사되었어요! 방송 채팅창에 붙여넣기(Ctrl+V) 해주세요 ⭐`);
         }
 
-        // Tab Filtering Handler
         function filterSongsByGenre(genre) {
             currentSelectedGenre = genre;
-            const tabs = document.querySelectorAll('#song-genre-tabs button');
-            tabs.forEach(tab => {
+            const tabs = document.querySelectorAll('#song-genre-tabs font-bold'); // Fix selection
+            const tabButtons = document.querySelectorAll('#song-genre-tabs button');
+            tabButtons.forEach(tab => {
                 tab.classList.remove('bg-brand', 'text-white', 'shadow-xs');
                 tab.classList.add('bg-indigo-50', 'dark:bg-[#1a1829]', 'text-[#4e486b]', 'dark:text-indigo-300');
             });
@@ -1316,7 +1324,6 @@
 
         function checkAdminPin() {
             const pin = document.getElementById('admin-pin').value;
-            // Configured password key given: 730916
             if (pin === '730916') { 
                 isAdminMode = true; closeAdminLoginModal();
                 document.getElementById('admin-add-user-btn').classList.remove('hidden'); document.getElementById('admin-add-user-btn').classList.add('flex');
@@ -1332,7 +1339,6 @@
             }
         }
 
-        // Admin Upbo Actions
         function saveUpboData() { updateFirestore('upbo', globalUpboData); }
 
         function openUpboEditModal(user, avatarUrl) {
@@ -1419,7 +1425,6 @@
             `).join('');
         }
 
-        // 수량 증감 저장 로직
         function changeItemCount(index, delta) {
             const user = globalUpboData.find(u => u.id === currentEditingUserId); if (!user) return;
             user.items[index].count += delta; if (user.items[index].count <= 0) user.items[index].count = 0;
@@ -1451,7 +1456,6 @@
                 const nickEl = document.getElementById('new-user-nickname'); nickEl.classList.add('border-red-500'); nickEl.placeholder = '이름을 정확하게 적어주세요!';
                 setTimeout(() => { nickEl.classList.remove('border-red-500'); nickEl.placeholder = '닉네임 입력'; }, 2000); return;
             }
-            // Generate simple random unique ID if none provided to respect constraint
             const finalId = idInput || 'hangsung_' + Math.random().toString(36).substring(2, 9);
             globalUpboData.unshift({ id: finalId, nickname: nickInput, items: [] });
             saveUpboData(); closeAddUserModal(); document.getElementById('upbo-search').dispatchEvent(new Event('input'));
@@ -1534,13 +1538,11 @@
             globalScheduleData.forEach((schedule, index) => {
                 const content = document.getElementById(`schedule-input-${index}`).value; const isRest = document.getElementById(`schedule-rest-${index}`).checked;
                 schedule.content = content; schedule.isRest = isRest;
-                // 주말 또는 특정 요일에 색을 칠하던 규칙을 없애고 오직 휴방 요일(amber)과 일반 요일(gray)로만 분류합니다.
                 if (isRest) { schedule.color = 'amber'; } else { schedule.color = 'gray'; }
             });
             updateFirestore('schedule', globalScheduleData); renderSchedule(); closeScheduleEditModal();
         }
 
-        // Song edit controls
         function openAddSongModal() {
             const modal = document.getElementById('add-song-modal');
             document.getElementById('new-song-title').value = '';
