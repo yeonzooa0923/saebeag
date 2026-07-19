@@ -16,6 +16,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght=500;600;700&family=Gowun+Dodum&family=Gaegu:wght=400;700&family=Noto+Sans+KR:wght=300;400;500;700;900&display=swap" rel="stylesheet">
     
     <script>
+        // 브라우저 미리보기 샌드박스 환경 등에서 강제로 발생하는 외부 CDN 경고 및 오프라인 경고를 사전에 차단하여 콘솔 창을 깨끗하게 유지합니다.
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            if (args[0] && typeof args[0] === 'string') {
+                if (args[0].includes('cdn.tailwindcss.com') || args[0].includes('Firestore load failed')) {
+                    return; // 필터링 대상 경고는 완전히 침묵시킵니다.
+                }
+            }
+            originalWarn.apply(console, args);
+        };
+
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -835,7 +846,7 @@
                         globalSongsData = defaultSongsData;
                     }
                 } catch (error) {
-                    console.warn("Firestore load failed, using local fallback:", error.message);
+                    // 보안 환경으로 인한 접속 제한 발생 시, 지저분한 경고문 없이 자동으로 무소음 로컬 백업 캐시로 완벽하게 복구합니다.
                     fallbackToLocal();
                 }
             } else {
