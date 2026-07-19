@@ -666,16 +666,24 @@
         */
         import { initializeFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Configuration (새백님 전용 파이어베이스 프로젝트 데이터베이스 연동)
+        // 1. App ID 및 Firebase Config 결정 (프리뷰용 환경변수 최우선 적용하여 크로스오리진 차단 전면 해결)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'saebeag-profile-app';
-        const firebaseConfig = {
-            apiKey: "AIzaSyCs-_qDa0AsgquHgTL2OZg9Ydm77r6HyDI",
-            authDomain: "saebeag-db.firebaseapp.com",
-            projectId: "saebeag-db",
-            storageBucket: "saebeag-db.firebasestorage.app",
-            messagingSenderId: "126185742196",
-            appId: "1:126185742196:web:5a3b0d15df136b8a43d621"
-        };
+        
+        let firebaseConfig;
+        if (typeof __firebase_config !== 'undefined') {
+            // 플랫폼 주입 보안 우회 설정 (이프레임 샌드박스로 인해 외부 통신이 차단될 때 가동)
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            // 외부 단독 실행 시 사용할 새백님 전용 파이어베이스 실서버 프로젝트 정보
+            firebaseConfig = {
+                apiKey: "AIzaSyCs-_qDa0AsgquHgTL2OZg9Ydm77r6HyDI",
+                authDomain: "saebeag-db.firebaseapp.com",
+                projectId: "saebeag-db",
+                storageBucket: "saebeag-db.firebasestorage.app",
+                messagingSenderId: "126185742196",
+                appId: "1:126185742196:web:5a3b0d15df136b8a43d621"
+            };
+        }
 
         const app = initializeApp(firebaseConfig);
         
@@ -787,11 +795,8 @@
             }
         }
 
-        // Fetch All Data and Sync
+        // Fetch All Data and Sync (비차단 렌더링 방식 적용)
         async function fetchSiteData() {
-            const loadingInd = document.getElementById('loading-indicator');
-            if (loadingInd) loadingInd.classList.remove('hidden');
-
             const isAuthed = await authenticate();
             
             if (isAuthed && navigator.onLine) {
@@ -807,7 +812,7 @@
                         globalProfileData = data.profile || defaultProfileData;
                         globalSongsData = data.songs || defaultSongsData;
 
-                        // 로컬 캐시 갱신
+                        // 로컬 캐시 즉시 갱신
                         safeSetStorage('saebeagUpboData', globalUpboData);
                         safeSetStorage('saebeagNoticeData', globalNoticeData);
                         safeSetStorage('saebeagScheduleData', globalScheduleData);
@@ -836,7 +841,6 @@
             } else {
                 fallbackToLocal();
             }
-            if (loadingInd) loadingInd.classList.add('hidden');
         }
 
         function fallbackToLocal() {
@@ -922,14 +926,29 @@
                 });
             }
 
-            // 첫 데이터베이스 쿼리 페칭
-            await fetchSiteData();
-            
+            // [초고속 최적화 적용]: 먼저 캐시 데이터로 지연 시간 0초만에 즉시 그립니다!
+            fallbackToLocal();
             renderProfile();
             renderUpbo(globalUpboData);
             renderNotice();
             renderSchedule();
             renderSongList();
+
+            // 백그라운드에서 실시간 데이터베이스를 천천히 동기화한 뒤 변경사항이 있으면 소리소문없이 업데이트합니다.
+            const loadingInd = document.getElementById('loading-indicator');
+            if (loadingInd) loadingInd.classList.remove('hidden');
+
+            fetchSiteData().then(() => {
+                renderProfile();
+                renderUpbo(globalUpboData);
+                renderNotice();
+                renderSchedule();
+                renderSongList();
+                if (loadingInd) loadingInd.classList.add('hidden');
+            }).catch(err => {
+                console.warn("Background sync bypassed, utilizing cash state:", err);
+                if (loadingInd) loadingInd.classList.add('hidden');
+            });
         });
 
         // Background Star Particles Generator for Saebeag's celestial signature
@@ -1285,7 +1304,6 @@
 
         function filterSongsByGenre(genre) {
             currentSelectedGenre = genre;
-            const tabs = document.querySelectorAll('#song-genre-tabs font-bold'); // Fix selection
             const tabButtons = document.querySelectorAll('#song-genre-tabs button');
             tabButtons.forEach(tab => {
                 tab.classList.remove('bg-brand', 'text-white', 'shadow-xs');
@@ -1339,6 +1357,7 @@
             }
         }
 
+        // Admin Upbo Actions
         function saveUpboData() { updateFirestore('upbo', globalUpboData); }
 
         function openUpboEditModal(user, avatarUrl) {
