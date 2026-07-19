@@ -13,7 +13,7 @@
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts: Gowun Dodum (Neat & Clean), Gaegu (Cute Accent), Fredoka (Cute English) -->
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Gowun+Dodum&family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght=500;600;700&family=Gowun+Dodum&family=Gaegu:wght=400;700&family=Noto+Sans+KR:wght=300;400;500;700;900&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -582,7 +582,7 @@
                         <h4 class="text-sm text-gray-900 dark:text-white mb-2"><i class="fa-solid fa-star text-brand"></i> 메인 환영 인사</h4>
                         <textarea id="edit-profile-intro" rows="3" class="w-full bg-indigo-50/10 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-950 text-gray-950 dark:text-indigo-100 rounded-xl focus:ring-1 focus:ring-brand p-3 outline-none resize-none mb-2"></textarea>
                         <label class="block text-gray-400 mb-1.5 mt-3">대표 키워드 해시태그 (쉼표(,) 구분)</label>
-                        <input type="text" id="edit-profile-tags" class="w-full bg-indigo-50/10 dark:bg-indigo-950/10 border border-indigo-100 dark:text-gray-950 dark:text-indigo-100 rounded-xl focus:ring-1 focus:ring-brand p-3 outline-none">
+                        <input type="text" id="edit-profile-tags" class="w-full bg-indigo-50/10 dark:bg-indigo-950/10 border border-indigo-100 text-gray-950 dark:text-indigo-100 rounded-xl focus:ring-1 focus:ring-brand p-3 outline-none">
                     </div>
                     <hr class="border-indigo-50 dark:border-indigo-950/30">
                     
@@ -646,7 +646,7 @@
 
     <!-- Footer Section with Links -->
     <footer class="bg-indigo-950 dark:bg-black text-white py-8 text-center mt-auto transition-colors duration-300 border-t border-indigo-100/10">
-        <p class="text-sm text-indigo-100 dark:text-indigo-300 font-cute text-2xl tracking-wide">⭐ 오늘도 류새백과 함께 아름다운 새벽을 수놓아보아요 ⭐</p>
+        <p class="text-sm text-indigo-100 dark:text-indigo-300 font-cute text-2xl tracking-wide">⭐ 새벽에 언제나 함께 ⭐</p>
         
         <p class="text-[11px] text-indigo-300/60 dark:text-indigo-600 font-mono mt-4">© 2026 류새백🌌. All Saebeag’s Rights Reserved.</p>
         <p class="text-[11px] text-indigo-300/60 dark:text-indigo-600 mt-1 font-mono">made by. 연주아 🍀 (for. Saebeag 🌟)</p>
@@ -693,12 +693,12 @@
 
         const defaultScheduleData = [
             { day: '월', content: '주간 새벽 라디오 & 항성 수다 소통방 🗣️', color: 'gray', isRest: false },
-            { day: '화', content: '잔잔하고 편안한 감성 노래방송 🎤', color: 'blue', isRest: false },
-            { day: '수', content: '정기 휴방 (우주선 정비 및 컨디션 관리) 💤', color: 'green', isRest: true },
+            { day: '화', content: '잔잔하고 편안한 감성 노래방송 🎤', color: 'gray', isRest: false },
+            { day: '수', content: '정기 휴방 (우주선 정비 및 컨디션 관리) 💤', color: 'amber', isRest: true },
             { day: '목', content: '두근두근 스팀 스토리/공포게임 정복하기 🎮', color: 'gray', isRest: false },
-            { day: '금', content: '항성 신청곡 100% 라이브 보컬 라디오 🌟', color: 'blue', isRest: false },
+            { day: '금', content: '항성 신청곡 100% 라이브 보컬 라디오 🌟', color: 'gray', isRest: false },
             { day: '토', content: '주말 힐링 합방 및 시청자 참여 소통 🛰️', color: 'gray', isRest: false },
-            { day: '일', content: '유튜브 하이라이트 리뷰 & 주간 피드백', color: 'red', isRest: false }
+            { day: '일', content: '유튜브 하이라이트 리뷰 & 주간 피드백', color: 'gray', isRest: false }
         ];
         
         const defaultProfileData = {
@@ -1116,16 +1116,16 @@
             if (!list) return;
             list.innerHTML = '';
             
-            // 휴방 외의 요일은 무채색(gray) 톤으로 차분하게 매핑하고, 휴방 요일만 초록색 포인트를 적용합니다.
+            // 휴방 외의 요일은 무채색(gray) 톤으로 차분하게 매핑하고, 휴방 요일만 밤하늘의 노란 별빛(amber) 포인트를 적용합니다.
             const colorMap = {
                 gray: { text: 'text-gray-700 dark:text-indigo-200', dayText: 'text-gray-500 dark:text-indigo-300 bg-indigo-50/50 dark:bg-indigo-950/20' },
-                green: { text: 'text-emerald-600 dark:text-emerald-400 font-bold', dayText: 'text-white bg-emerald-400' }
+                amber: { text: 'text-amber-600 dark:text-amber-400 font-bold', dayText: 'text-[#1e1b4b] bg-amber-300 dark:bg-amber-400 font-black' }
             };
 
             globalScheduleData.forEach(schedule => {
-                const isRest = schedule.isRest || schedule.color === 'green';
-                const colors = isRest ? colorMap.green : colorMap.gray;
-                const bgClass = isRest ? 'bg-emerald-50/10 dark:bg-emerald-950/5 border border-emerald-100/10 dark:border-emerald-950/10' : 'border border-transparent';
+                const isRest = schedule.isRest || schedule.color === 'amber';
+                const colors = isRest ? colorMap.amber : colorMap.gray;
+                const bgClass = isRest ? 'bg-amber-50/15 dark:bg-amber-950/10 border border-amber-200/30 dark:border-amber-950/20' : 'border border-transparent';
                 list.innerHTML += `
                     <div class="flex items-center justify-between p-2 rounded-xl ${bgClass} transition-colors font-semibold">
                         <div class="flex items-center gap-3">
@@ -1534,8 +1534,8 @@
             globalScheduleData.forEach((schedule, index) => {
                 const content = document.getElementById(`schedule-input-${index}`).value; const isRest = document.getElementById(`schedule-rest-${index}`).checked;
                 schedule.content = content; schedule.isRest = isRest;
-                // 주말 또는 특정 요일에 색을 칠하던 규칙을 없애고 오직 휴방 요일(green)과 일반 요일(gray)로만 분류합니다.
-                if (isRest) { schedule.color = 'green'; } else { schedule.color = 'gray'; }
+                // 주말 또는 특정 요일에 색을 칠하던 규칙을 없애고 오직 휴방 요일(amber)과 일반 요일(gray)로만 분류합니다.
+                if (isRest) { schedule.color = 'amber'; } else { schedule.color = 'gray'; }
             });
             updateFirestore('schedule', globalScheduleData); renderSchedule(); closeScheduleEditModal();
         }
