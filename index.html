@@ -163,8 +163,9 @@
                     <div class="pt-2 sm:pt-4 flex-grow text-center sm:text-left flex flex-col sm:justify-between">
                         <div>
                             <div class="flex items-center justify-center sm:justify-start gap-1.5 mb-1.5">
-                                <span class="bg-brand-light text-brand-dark dark:bg-indigo-950/60 dark:text-indigo-300 px-3 py-0.5 rounded-full text-xs font-bold"><i class="fa-solid fa-microphone"></i> 우주 버추얼</span>
-                                <span class="bg-[#fef08a] text-amber-900 dark:bg-amber-950/50 dark:text-amber-300 px-3 py-0.5 rounded-full text-xs font-bold"><i class="fa-solid fa-gamepad"></i> 힐링 수다 & 종합 게임</span>
+                                <span class="bg-brand-light text-brand-dark dark:bg-indigo-950/60 dark:text-indigo-300 px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 border border-indigo-100 dark:border-indigo-900/40">
+                                    <i class="fa-solid fa-moon text-amber-400"></i> 하늘에서 떨어진 밤의 수호자 막내 🌌
+                                </span>
                             </div>
                             <h1 class="text-3xl font-logo font-bold text-[#1e1b4b] dark:text-white mb-2.5 flex items-baseline justify-center sm:justify-start gap-2">
                                 류새백
@@ -662,15 +663,15 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Configuration (새백님 데이터가 솔밍님 데이터와 겹치지 않게 'saebeag-profile-app' ID 및 전용 Collection 사용)
+        // Firebase Configuration (새백님 전용 파이어베이스 프로젝트 데이터베이스 연동)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'saebeag-profile-app';
         const firebaseConfig = {
-            apiKey: "AIzaSyA-7RFaaBIxkdJpozbgN2vxF3Cw_C3uoiU",
-            authDomain: "solming-profile-db-5ebc8.firebaseapp.com",
-            projectId: "solming-profile-db-5ebc8",
-            storageBucket: "solming-profile-db-5ebc8.firebasestorage.app",
-            messagingSenderId: "144023412722",
-            appId: "1:144023412722:web:72ab8fda5ded2cfe3bd56b"
+            apiKey: "AIzaSyCs-_qDa0AsgquHgTL2OZg9Ydm77r6HyDI",
+            authDomain: "saebeag-db.firebaseapp.com",
+            projectId: "saebeag-db",
+            storageBucket: "saebeag-db.firebasestorage.app",
+            messagingSenderId: "126185742196",
+            appId: "1:126185742196:web:5a3b0d15df136b8a43d621"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -757,8 +758,8 @@
             } catch (e) {}
         }
 
-        // Firebase 데이터 저장 문서 참조 경로 (새백용 컬렉션으로 독립화)
-        const getSaebeagDocRef = () => doc(db, 'artifacts', appId, 'public', 'data', 'profile-content');
+        // Firebase 데이터 저장 문서 참조 경로 (규칙 1에 따른 완벽한 6세그먼트 문서 경로 지정)
+        const getSaebeagDocRef = () => doc(db, 'artifacts', appId, 'public', 'data', 'profile-content', 'main');
 
         async function authenticate() {
             try {
