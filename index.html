@@ -1115,16 +1115,17 @@
             const list = document.getElementById('schedule-list');
             if (!list) return;
             list.innerHTML = '';
+            
+            // 휴방 외의 요일은 무채색(gray) 톤으로 차분하게 매핑하고, 휴방 요일만 초록색 포인트를 적용합니다.
             const colorMap = {
-                gray: { text: 'text-gray-700 dark:text-indigo-200', dayText: 'text-gray-600 dark:text-indigo-300 bg-indigo-50/80 dark:bg-indigo-950/40' },
-                green: { text: 'text-emerald-600 dark:text-emerald-400 font-bold', dayText: 'text-white bg-emerald-400' },
-                blue: { text: 'text-brand-dark dark:text-brand font-bold', dayText: 'text-white bg-brand' },
-                red: { text: 'text-rose-500 dark:text-rose-400 font-bold', dayText: 'text-white bg-rose-400' }
+                gray: { text: 'text-gray-700 dark:text-indigo-200', dayText: 'text-gray-500 dark:text-indigo-300 bg-indigo-50/50 dark:bg-indigo-950/20' },
+                green: { text: 'text-emerald-600 dark:text-emerald-400 font-bold', dayText: 'text-white bg-emerald-400' }
             };
 
             globalScheduleData.forEach(schedule => {
-                const colors = colorMap[schedule.color] || colorMap.gray;
-                const bgClass = schedule.isRest ? 'bg-emerald-50/10 dark:bg-emerald-950/5 border border-emerald-100/10 dark:border-emerald-950/10' : 'hover:bg-indigo-50/10 border border-transparent';
+                const isRest = schedule.isRest || schedule.color === 'green';
+                const colors = isRest ? colorMap.green : colorMap.gray;
+                const bgClass = isRest ? 'bg-emerald-50/10 dark:bg-emerald-950/5 border border-emerald-100/10 dark:border-emerald-950/10' : 'border border-transparent';
                 list.innerHTML += `
                     <div class="flex items-center justify-between p-2 rounded-xl ${bgClass} transition-colors font-semibold">
                         <div class="flex items-center gap-3">
@@ -1136,6 +1137,7 @@
             });
         }
 
+        // Return SOOP/Afreeca style Avatar URL or placeholder
         function getAvatarUrl(user) {
             if (user.id && user.id.trim() !== '') {
                 const prefix = user.id.substring(0, 2);
@@ -1532,7 +1534,8 @@
             globalScheduleData.forEach((schedule, index) => {
                 const content = document.getElementById(`schedule-input-${index}`).value; const isRest = document.getElementById(`schedule-rest-${index}`).checked;
                 schedule.content = content; schedule.isRest = isRest;
-                if (isRest) { schedule.color = 'green'; } else { if (schedule.day === '토') schedule.color = 'blue'; else if (schedule.day === '일') schedule.color = 'red'; else schedule.color = 'gray'; }
+                // 주말 또는 특정 요일에 색을 칠하던 규칙을 없애고 오직 휴방 요일(green)과 일반 요일(gray)로만 분류합니다.
+                if (isRest) { schedule.color = 'green'; } else { schedule.color = 'gray'; }
             });
             updateFirestore('schedule', globalScheduleData); renderSchedule(); closeScheduleEditModal();
         }
