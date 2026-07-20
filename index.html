@@ -493,7 +493,7 @@
 
         <!-- Notice Edit Modal -->
         <div id="notice-edit-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
-            <div class="bg-white dark:bg-[#131124] rounded-2xl shadow-2xl w-11/12 max-w-lg overflow-hidden transform scale-95 transition-transform duration-300 border border-indigo-100/50 dark:border-indigo-950/40 flex flex-col max-h-[85vh]">
+            <div class="bg-white dark:bg-[#131124] rounded-2xl shadow-2xl w-11/12 max-w-lg overflow-hidden transform scale-95 transition-transform duration-300 border-indigo-100/50 dark:border-indigo-950/40 flex flex-col max-h-[85vh]">
                 <div class="p-4 flex items-center justify-between border-b border-indigo-50 dark:border-indigo-950/30 bg-brand-light/30 dark:bg-indigo-950/20">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-1.5"><i class="fa-solid fa-bullhorn text-brand"></i> 알림글 관리센터</h3>
                     <button onclick="closeNoticeEditModal()" class="text-indigo-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-xl"></i></button>
@@ -564,7 +564,7 @@
             </div>
         </div>
 
-        <!-- Profile Detail Edit Modal -->
+        <!-- Profile Detail Edit Modal (With Drag and Drop Image Uploader) -->
         <div id="profile-edit-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
             <div class="bg-white dark:bg-[#131124] rounded-2xl shadow-2xl w-11/12 max-w-lg overflow-hidden transform scale-95 transition-transform duration-300 border border-indigo-100/50 dark:border-indigo-950/40 flex flex-col max-h-[90vh]">
                 <div class="p-4 flex items-center justify-between border-b border-indigo-50 dark:border-indigo-950/30 bg-brand-light/30 dark:bg-indigo-950/20">
@@ -573,11 +573,31 @@
                 </div>
                 
                 <div class="p-5 flex-grow overflow-y-auto space-y-6 text-xs font-bold">
-                    <!-- Banner Cover Setting -->
+                    <!-- Banner Cover Drag-and-Drop / File Selection Interface -->
                     <div>
                         <h4 class="text-sm text-gray-900 dark:text-white mb-2"><i class="fa-regular fa-image text-brand mr-1"></i> 대표 아트 배너</h4>
-                        <label class="block text-gray-400 mb-1.5">상단 커버용 URL 이미지</label>
-                        <input type="text" id="edit-profile-banner" class="w-full bg-indigo-50/10 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-950 text-gray-950 dark:text-indigo-100 rounded-xl focus:ring-1 focus:ring-brand p-3 outline-none" placeholder="이미지 주소를 복사해 넣어주세요">
+                        <label class="block text-gray-400 mb-2">상단 커버 이미지 업로드 (최적 비율: 16:9 또는 21:9 권장)</label>
+                        
+                        <div class="flex flex-col gap-2 mb-3">
+                            <!-- Drag and Drop Zone -->
+                            <div id="banner-dropzone" class="border-2 border-dashed border-indigo-300/55 dark:border-indigo-850 hover:border-brand rounded-xl p-5 flex flex-col items-center justify-center bg-indigo-50/20 dark:bg-indigo-950/20 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/40 cursor-pointer transition-all">
+                                <i class="fa-solid fa-cloud-arrow-up text-brand text-2xl mb-2"></i>
+                                <span class="text-xs text-gray-600 dark:text-indigo-200 font-semibold" id="upload-status-text">클릭하거나 이미지를 여기로 끌어다 놓으세요</span>
+                                <span class="text-[10px] text-gray-400 mt-1">PNG, JPG, WEBP (자동 압축 최적화 지원)</span>
+                                <input type="file" id="edit-profile-banner-file" accept="image/*" class="hidden">
+                            </div>
+                            
+                            <!-- Upload Preview Container with Clear Action -->
+                            <div id="banner-preview-container" class="hidden relative rounded-xl overflow-hidden h-28 border border-indigo-100 dark:border-indigo-950/40">
+                                <img id="banner-upload-preview" src="" class="w-full h-full object-cover" alt="미리보기">
+                                <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2 p-2">
+                                    <span class="text-xs text-emerald-400 font-bold"><i class="fa-solid fa-circle-check"></i> 새 배너가 선택되었습니다</span>
+                                    <button type="button" onclick="removeUploadedBanner()" class="bg-red-500/80 hover:bg-red-600 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold transition-all shadow-md">
+                                        <i class="fa-solid fa-trash-can mr-1"></i> 이미지 취소 (기본 배경으로)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <hr class="border-indigo-50 dark:border-indigo-950/30">
 
@@ -746,6 +766,9 @@
         let currentEditingUserId = null;
         let deleteConfirmState = false; 
         let currentSelectedGenre = '전체';
+        
+        // 업로드될 배너 이미지의 Base64 임시 버퍼 공간
+        let tempBannerDataUrl = "";
 
         // Local Storage Utilities
         function safeGetStorage(key, defaultValue) {
@@ -855,10 +878,71 @@
             }
         }
 
+        // 이미지 최적화 및 Base64 변환 처리 함수
+        function handleBannerFile(file) {
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast("올바른 이미지 파일만 업로드 가능합니다. 🌸");
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // 가로 1200px 한계로 자동 다운스케일링 및 압축 (Firestore 업로드 용량 준수)
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max_size = 1200;
+                    
+                    if (width > max_size) {
+                        height *= max_size / width;
+                        width = max_size;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // JPEG 포맷, 품질 0.75로 최적 퀄리티/용량 비 압축
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                    tempBannerDataUrl = compressedDataUrl;
+                    
+                    // 미리보기 UI 업데이트
+                    const previewContainer = document.getElementById('banner-preview-container');
+                    const uploadPreview = document.getElementById('banner-upload-preview');
+                    const dropzone = document.getElementById('banner-dropzone');
+                    
+                    if (previewContainer && uploadPreview && dropzone) {
+                        uploadPreview.src = compressedDataUrl;
+                        previewContainer.classList.remove('hidden');
+                        dropzone.classList.add('hidden');
+                    }
+                    showToast("배너 이미지 준비 완료! 저장 버튼을 누르면 적용됩니다 ⭐");
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeUploadedBanner() {
+            tempBannerDataUrl = "";
+            const previewContainer = document.getElementById('banner-preview-container');
+            const dropzone = document.getElementById('banner-dropzone');
+            if (previewContainer && dropzone) {
+                previewContainer.classList.add('hidden');
+                dropzone.classList.remove('hidden');
+            }
+            showToast("배너 이미지가 기본 상태로 초기화되었습니다.");
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             // Star particle generator background decoration
             generateBgStars();
 
+            // 테마 토글 제어 구성
             const themeToggleBtns = [document.getElementById('theme-toggle'), document.getElementById('mobile-theme-toggle')];
             const html = document.documentElement;
             let savedTheme = 'light';
@@ -899,6 +983,35 @@
             document.querySelectorAll('#mobile-menu a').forEach(link => {
                 link.addEventListener('click', () => document.getElementById('mobile-menu').classList.add('hidden'));
             });
+
+            // 업로드 드롭존 마운트 및 리스너 등록
+            const dropzone = document.getElementById('banner-dropzone');
+            const fileInput = document.getElementById('edit-profile-banner-file');
+            
+            if (dropzone && fileInput) {
+                dropzone.addEventListener('click', () => fileInput.click());
+                
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    handleBannerFile(file);
+                });
+                
+                dropzone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropzone.classList.add('border-brand', 'bg-indigo-50/50', 'dark:bg-indigo-950/50');
+                });
+                
+                dropzone.addEventListener('dragleave', () => {
+                    dropzone.classList.remove('border-brand', 'bg-indigo-50/50', 'dark:bg-indigo-950/50');
+                });
+                
+                dropzone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropzone.classList.remove('border-brand', 'bg-indigo-50/50', 'dark:bg-indigo-950/50');
+                    const file = e.dataTransfer.files[0];
+                    handleBannerFile(file);
+                });
+            }
 
             const today = new Date();
             const dateSpan = document.getElementById('upbo-date');
@@ -953,7 +1066,7 @@
                 star.innerText = starIcons[Math.floor(Math.random() * starIcons.length)];
                 
                 container.appendChild(star);
-                // 애니메이션이 완전히 완료되는 순간(duration * 1000) 정확하게 요소를 파괴하여 화면 정지 현상 차단
+                // 애니메이션이 완전히 완료되는 순간 정확하게 요소를 파괴하여 메모리 누수 차단
                 setTimeout(() => { star.remove(); }, duration * 1000);
             }, 1200);
         }
@@ -1585,9 +1698,27 @@
         function openProfileEditModal() {
             const modal = document.getElementById('profile-edit-modal');
             
-            document.getElementById('edit-profile-banner').value = globalProfileData.bannerUrl || defaultProfileData.bannerUrl || '';
             document.getElementById('edit-profile-intro').value = globalProfileData.introText || ''; 
             document.getElementById('edit-profile-tags').value = (globalProfileData.tags || []).join(', ');
+
+            // 이미지 업로드 데이터 가져오기 및 복사 바인딩
+            tempBannerDataUrl = globalProfileData.bannerUrl || '';
+            const previewContainer = document.getElementById('banner-preview-container');
+            const uploadPreview = document.getElementById('banner-upload-preview');
+            const dropzone = document.getElementById('banner-dropzone');
+            
+            if (tempBannerDataUrl && tempBannerDataUrl.trim() !== '') {
+                if (uploadPreview && previewContainer && dropzone) {
+                    uploadPreview.src = tempBannerDataUrl;
+                    previewContainer.classList.remove('hidden');
+                    dropzone.classList.add('hidden');
+                }
+            } else {
+                if (previewContainer && dropzone) {
+                    previewContainer.classList.add('hidden');
+                    dropzone.classList.remove('hidden');
+                }
+            }
             
             const broadcast = globalProfileData.broadcast || {};
             document.getElementById('edit-profile-time').value = broadcast.time || ''; 
@@ -1654,7 +1785,8 @@
         function saveProfileChanges() {
             const parse = (str) => str.split(',').map(item => item.trim()).filter(item => item !== '');
             
-            globalProfileData.bannerUrl = document.getElementById('edit-profile-banner').value.trim();
+            // 이미지 주소 입력 대신 base64 데이터를 그대로 바인딩해 저장합니다.
+            globalProfileData.bannerUrl = tempBannerDataUrl;
             globalProfileData.introText = document.getElementById('edit-profile-intro').value; 
             globalProfileData.tags = parse(document.getElementById('edit-profile-tags').value);
             
@@ -1729,6 +1861,7 @@
         window.closeAddSongModal = closeAddSongModal;
         window.submitNewSong = submitNewSong;
         window.deleteSong = deleteSong;
+        window.removeUploadedBanner = removeUploadedBanner;
     </script>
 </body>
 </html>
